@@ -7,16 +7,13 @@
 #include <Rinternals.h>
 
 #include "brent.h"
-#define ARRAY_MAX 100
+#include "overall_type1.h"
 
 int r,n;
 double Pt=0.25, Er=10;
 double weiEta=1.5, weiBeta=1.5;
 
 double cenArray[ARRAY_MAX], comArray[ARRAY_MAX];
-
-double deriEquation1(double weibullBeta);
-void simuDataType1(double *cenVec, double *comVec);
 
 SEXP transToR1(){
 	int i;
