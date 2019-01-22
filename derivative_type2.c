@@ -1,8 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-extern int r, n;
-extern double cenArray[];
+#include "overall_type2.h"
 
 double deriEquation(double weibullBeta){
 	int i;

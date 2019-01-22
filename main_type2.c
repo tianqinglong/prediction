@@ -3,10 +3,10 @@
 #define MATHLIB_STANDALONE
 #include <Rmath.h>
 
-#include "type2censor.h"
+#include "overall_type2.h"
 #include "brent.h"
 
-int n=50, r=30;
+int r=30, n=50;
 double weiEta=1.5, weiBeta=1.5;
 double cenArray[ARRAY_MAX], realArray[ARRAY_MAX];
 
@@ -15,7 +15,7 @@ int main(){
 	double betaMLE, etaMLE;
 	double t, machep;
 
-	set_seed(time(NULL), 580580);
+	set_seed(time(NULL),123);
 	simuDataType2(cenArray, realArray);
 
 	machep = r8_epsilon();

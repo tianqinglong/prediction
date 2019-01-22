@@ -3,9 +3,7 @@
 #define MATHLIB_STANDALONE
 #include <Rmath.h>
 
-extern int r, n;
-extern double weiEta, weiBeta;
-extern double cenArray[], realArray[];
+#include "overall_type2.h"
 
 void simuDataType2(double* cenVec, double* comVec){
 	int i;

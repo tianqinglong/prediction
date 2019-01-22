@@ -1,6 +1,13 @@
-This folder contains the code for the prediction project.
+main_typeX.c: The main functions that print the data and MLEs.
 
-test.c: This is the main file.
-SimuDataType2.c: This file contains the function to simulate type 2 censoring data.
-DerivativeEquation.c: This file contains the function to compute the value of the partial derivative, which is the equation we want to solve.
-brent.c: This C file is downloaded online, it is being use to find out the root.
+r_object_typeX.c: Equivalent to main_typeX.c. But this function produce a R object.
+compareMLE_typeX.r: Calling r_object_typeX.c from R
+
+simulator_typeX.c: Functions that generate random samples.
+
+derivative_typeX.c: This function is the equation that we want to find the root of.
+
+brent.c: Downloaded online, to find out the root of the equation in derivative_typeX.c
+brent.h: The corresponding 
+
+overall_typeX.h: Contains the declarations of external variables and functions.
