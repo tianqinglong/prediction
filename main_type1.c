@@ -18,28 +18,24 @@ int main(){
 	double betaMLE, etaMLE, betaMLEBoot, etaMLEBoot;
 
 	set_seed(time(NULL),500);
-
 	r=0;
 	while(r < 2){
 		simuDataType1(cenArray, comArray);
 	}
+	printf("%d %d\n", r, n);
 	/*
 	for(i=0;i<n;i++){
 		printf("%f %f\n", cenArray[i], comArray[i]);
 	}*/
-	printf("%d %d\n", r, n);
 
 	machep = r8_epsilon();
 	t = machep;
-
 	betaMLE = zero(0.1,10,machep,t,deriEquation1);
-
 	etaMLE = 0;
 	for(i=0;i<n;i++){
 		etaMLE += pow(cenArray[i], betaMLE);
 	}
 	etaMLE = pow(etaMLE/r,1/betaMLE);
-
 	printf("%f %f\n", betaMLE, etaMLE);
 
 	getWeight(weightArray);
