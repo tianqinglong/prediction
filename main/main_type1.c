@@ -30,7 +30,7 @@ int main(){
 
 	machep = r8_epsilon();
 	t = machep;
-	betaMLE = zero(0.1,10,machep,t,deriEquation1);
+	betaMLE = zero(0.1,10,machep,t,deriEquation);
 	etaMLE = 0;
 	for(i=0;i<n;i++){
 		etaMLE += pow(cenArray[i], betaMLE);
@@ -38,19 +38,20 @@ int main(){
 	etaMLE = pow(etaMLE/r,1/betaMLE);
 	printf("%f %f\n", betaMLE, etaMLE);
 
-	getWeight(weightArray);
+	for(i=0;i<10;i++){
+		getWeight(weightArray);
+		betaMLEBoot = zero(0.1,10,machep,t,deriFRWB);
+		nt=0;dt=0;
+		for(i=0;i<n;i++){
+			nt += weightArray[i]*pow(cenArray[i],betaMLEBoot);
+			dt += ((i<r) ? weightArray[i] : 0);
+		}
+		etaMLEBoot = pow(nt/dt, 1/betaMLEBoot);
+		printf("%f %f\n", betaMLEBoot, etaMLEBoot);
+	}
 	/*
 	for(i=1;i<n;i++){
 		printf("%f\n", weightArray[i]);
 	}*/
-	betaMLEBoot = zero(0.1,10,machep,t,deriFRWB);
-	nt=0;dt=0;
-	for(i=0;i<n;i++){
-		nt += weightArray[i]*pow(cenArray[i],betaMLEBoot);
-		dt += ((i<r) ? weightArray[i] : 0);
-	}
-	etaMLEBoot = pow(nt/dt, 1/betaMLEBoot);
-	printf("%f %f\n", betaMLEBoot, etaMLEBoot);
-
 	return 0;
 }
