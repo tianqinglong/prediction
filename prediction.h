@@ -1,6 +1,6 @@
 #define MAX_ARRAY 10000
-#define N 10
-#define B 5000
+#define N 20
+#define B 10000
 
 extern double censor;
 
@@ -14,3 +14,5 @@ double gpqinterval(double betab[], double etab[], double alpha, double mbeta, do
 double pbinterval(double betab[], double etab[], double alpha);
 double pbbinominterval(double betab[], double etab[], double alpha, double times, int n, int r);
 double gpqbinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r);
+double find_binom_prob(double lower, double upper, int n, double beta, double eta, double times);
+double calibinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r);

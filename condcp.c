@@ -160,12 +160,12 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	int i;
 
 	int r,n;
-	int ubinom_pb, lbinom_pb, ubinom_gpq, lbinom_gpq, ubinom_pi, lbinom_pi;
+	int ubinom_pb, lbinom_pb, ubinom_gpq, lbinom_gpq, ubinom_pi, lbinom_pi, ubinom_cal, lbinom_cal;
 	double *data, *weight0, *MLEs, *mb, *wb, *db;
 	double mbeta, meta; //local copies to record mles
 	double betaB[B], etaB[B];
 
-	double cp_pb, cp_gpq, cp_pi;
+	double cp_pb, cp_gpq, cp_pi, cp_cali;
 
 	//static double cp[3];
 
@@ -191,6 +191,7 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	for(i=0; i<(n+2); i++)
 	{
 		data1[i] = data[i];
+		// printf("%f\n", data1[i]);
 	}
 	for(i=0; i<n; i++)
 	{
@@ -202,7 +203,7 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	// make a local copy
 	mbeta = MLEs[0];
 	meta = MLEs[1];
-	// printf("The MLEs are: (%f, %f)\n", mbeta, meta);
+	printf("The MLEs are: (%f, %f)\n", mbeta, meta);
 
 	if(FRWB == 1)
 	{
@@ -276,6 +277,18 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	cp_pi = find_binom_prob(lbinom_pi,ubinom_pi, n-r, beta, eta, times);
 
 	printf("PI:[%d,%d] CP:%f\n", lbinom_pi, ubinom_pi, cp_pi);
+
+	double ucali, lcali;
+	ucali = calibinominterval(betaB, etaB, upper, times, mbeta, meta, n, r);
+	lcali = calibinominterval(betaB, etaB, lower, times, mbeta, meta, n, r);
+
+	ubinom_cal = qbinom(ucali, n-r, p_pi, 1, 0);
+	lbinom_cal = qbinom(lcali, n-r, p_pi, 1, 0);
+	if(lbinom_cal > 0){
+		lbinom_cal--;
+	}
+	cp_cali = find_binom_prob(lbinom_cal,ubinom_cal, n-r, beta, eta, times);
+	printf("CALI:[%d,%d] CP:%f\n", lbinom_cal, ubinom_cal, cp_cali);
 
 	
 }

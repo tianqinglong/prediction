@@ -6,11 +6,12 @@
 #include "prediction.h"
 #include "brent.h"
 
-static double mlebeta, mleeta, level, betabt[B], etabt[B], local_time, local_n, local_r;
+static double mlebeta, mleeta, level, betabt[B], etabt[B], local_time, local_n, local_r, local_betam, local_etam;
 
 double funcpb(double x);
 double funcgpq(double x);
 double condiprob(double shape, double scale, double times);
+double calibrate(double level_cali);
 
 double gpqinterval(double betab[], double etab[], double alpha, double mbeta, double meta)
 // gpq method
@@ -152,9 +153,119 @@ double gpqbinominterval(double betab[], double etab[], double alpha, double time
 	return bound;
 }
 
+double calibinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
+{
+	int i,j,bound;
+	double binomp, tmp;
+
+	double cali_alpha;
+
+	for(i=0;i<B;i++)
+	{
+		betabt[i] = betab[i];
+		etabt[i] = etab[i];
+	}
+
+	level = alpha;
+	local_time = times;
+
+	local_r = r;
+	local_n = n;
+
+	local_betam = beta_mle;
+	local_etam = eta_mle;
+
+	double machep = r8_epsilon();
+	double t = machep;
+
+	// double cdf, blevel
+	// blevel = calibrate(level);
+
+	// if(level > 0.5)
+	// {
+	// 	tmp = level;
+	// 	if(blevel > level)
+	// 	{
+	// 		while(blevel > level)
+	// 		{
+	// 			tmp -= 0.002;
+	// 			blevel = calibrate(tmp);
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		while(blevel < level)
+	// 		{
+	// 			tmp +=0.002;
+	// 			blevel = calibrate(tmp);
+	// 		}
+	// 	}
+	// }
+	// else
+	// {
+	// 	tmp = level;
+	// 	if(blevel < level)
+	// 	{
+	// 		while(blevel < level)
+	// 		{
+	// 			tmp += 0.002;
+	// 			blevel = calibrate(tmp);
+	// 		}
+	// 	}
+	// 	else
+	// 	{
+	// 		while(blevel > level)
+	// 		{
+	// 			tmp -= 0.002;
+	// 			blevel = calibrate(tmp);
+	// 		}
+	// 	}
+	// }
+	tmp = zero(0,1,machep,t,calibrate);
+
+
+	return tmp;
+}
+
 ///////////////////////////////
 /* Below are local functions */
 ///////////////////////////////
+
+double calibrate(double alpha_cali)
+{
+	int i, interval;
+	double prob, cdf, pbm, value;
+
+	pbm = condiprob(local_betam, local_etam, local_time);
+	cdf = 0;
+	if(level < 0.5)
+	{
+		for(i=0;i<B;i++)
+		{
+			prob = condiprob(betabt[i], etabt[i], local_time);
+			interval = qbinom(alpha_cali, local_n - local_r, prob, 1, 0);
+			interval = (interval == 0) ? 0 : (interval-1);
+			cdf += pbinom(interval,local_n - local_r,pbm,0,0) + dbinom(interval, local_n - local_r, pbm, 0);
+		}
+		cdf = cdf/B;
+
+		value = cdf - (1-level);
+	}
+	else
+	{
+		for(i=0;i<B;i++)
+		{
+			prob = condiprob(betabt[i], etabt[i], local_time);
+			interval = qbinom(alpha_cali, local_n - local_r, prob, 1, 0);
+			cdf += pbinom(interval, local_n - local_r,pbm,1,0);
+		}
+		cdf = cdf/B;
+
+		value = cdf - level;
+	}
+
+	return value;
+}
 
 double condiprob(double shape, double scale, double times)
 {

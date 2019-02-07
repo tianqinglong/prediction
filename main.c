@@ -15,11 +15,11 @@ int main(){
 	double *cptmp;
 	double cp[N][3], cp1=0, cp2=0, cp3=0;
 
-	type = 1; // Censoring Type: 1 or 2
-	Er = 5;	// (Expected) number of failures
+	type = 2; // Censoring Type: 1 or 2
+	Er = 6;	// (Expected) number of failures
 	Pt = 0.1; // (Expected) Fraction of failing
 	shape = 1.5;
-	scale = 1;
+	scale = .5;
 	FRWB = 0; // Use FRWB: 1 yes, 0 no
 	lower = 0.05;
 	upper = 0.95;
