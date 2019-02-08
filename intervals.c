@@ -156,7 +156,6 @@ double gpqbinominterval(double betab[], double etab[], double alpha, double time
 double calibinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
 {
 	int i;
-	double binomp, alpha_cali;
 
 	double cali_alpha;
 
@@ -221,15 +220,15 @@ double calibinominterval(double betab[], double etab[], double alpha, double tim
 	// 		}
 	// 	}
 	// }
-	alpha_cali = zero(0,1,machep,t,calibrate);
+	cali_alpha = zero(0,1,machep,t,calibrate);
 
 
-	return alpha_cali;
+	return cali_alpha;
 }
 
 double fonsecabinominterval(double betab[], double etabt[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
 {
-	int i,j, bound;
+	int i,j, bound = -1;
 	double cdf, pbm, pbb;
 
 	pbm = condiprob(beta_mle, eta_mle, times);
