@@ -155,8 +155,8 @@ double gpqbinominterval(double betab[], double etab[], double alpha, double time
 
 double calibinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
 {
-	int i,j,bound;
-	double binomp, tmp;
+	int i;
+	double binomp, alpha_cali;
 
 	double cali_alpha;
 
@@ -178,7 +178,7 @@ double calibinominterval(double betab[], double etab[], double alpha, double tim
 	double machep = r8_epsilon();
 	double t = machep;
 
-	// double cdf, blevel
+	// double cdf, blevel, tmp;
 	// blevel = calibrate(level);
 
 	// if(level > 0.5)
@@ -221,10 +221,45 @@ double calibinominterval(double betab[], double etab[], double alpha, double tim
 	// 		}
 	// 	}
 	// }
-	tmp = zero(0,1,machep,t,calibrate);
+	alpha_cali = zero(0,1,machep,t,calibrate);
 
 
-	return tmp;
+	return alpha_cali;
+}
+
+double fonsecabinominterval(double betab[], double etabt[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
+{
+	int i,j, bound;
+	double cdf, pbm, pbb;
+
+	pbm = condiprob(beta_mle, eta_mle, times);
+	
+	for(i=0;i<=(n-r);i++)
+	{	
+		cdf = 0;
+		for(j=0;j<B;j++)
+		{
+			pbb = condiprob(betab[j], etabt[j], times);
+			cdf += pbinom(qbinom(pbinom(i,n-r,pbm,1,0),n-r,pbb,1,0),n-r,pbm,1,0);
+		}
+		cdf = cdf/B;
+
+		if(cdf > alpha)
+		{
+			bound = i;
+			break;
+		}
+	}
+
+	if(alpha < 0.5)
+	{
+		if(bound != 0)
+		{
+			bound--;
+		}
+	}
+
+	return bound;
 }
 
 ///////////////////////////////

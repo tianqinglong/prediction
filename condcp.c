@@ -155,17 +155,19 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	return cp;
 }
 
-void single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double times)
+double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double times)
 {
 	int i;
 
+	static double cp_binom[5];
+
 	int r,n;
-	int ubinom_pb, lbinom_pb, ubinom_gpq, lbinom_gpq, ubinom_pi, lbinom_pi, ubinom_cal, lbinom_cal;
+	int ubinom_pb, lbinom_pb, ubinom_gpq, lbinom_gpq, ubinom_pi, lbinom_pi, ubinom_cal, lbinom_cal, ubinom_fon, lbinom_fon;
 	double *data, *weight0, *MLEs, *mb, *wb, *db;
 	double mbeta, meta; //local copies to record mles
 	double betaB[B], etaB[B];
 
-	double cp_pb, cp_gpq, cp_pi, cp_cali;
+	double cp_pb, cp_gpq, cp_pi, cp_cali, cp_fon;
 
 	//static double cp[3];
 
@@ -257,6 +259,7 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	ubinom_pb = pbbinominterval(betaB, etaB, upper, times, n, r);
 
 	cp_pb = find_binom_prob(lbinom_pb, ubinom_pb, n-r, beta, eta, times);
+	cp_binom[0] = cp_pb;
 
 	printf("PB:[%d,%d] CP:%f\n", lbinom_pb, ubinom_pb, cp_pb);
 
@@ -264,6 +267,7 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	ubinom_gpq = gpqbinominterval(betaB, etaB, upper, times, mbeta, meta, n, r);
 
 	cp_gpq = find_binom_prob(lbinom_gpq, ubinom_gpq, n-r, beta, eta, times);
+	cp_binom[1] = cp_gpq;
 
 	printf("GPQ:[%d,%d] CP:%f\n", lbinom_gpq, ubinom_gpq, cp_gpq);
 
@@ -275,6 +279,7 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 	ubinom_pi = qbinom(upper, n-r, p_pi,1,0);
 
 	cp_pi = find_binom_prob(lbinom_pi,ubinom_pi, n-r, beta, eta, times);
+	cp_binom[2] = cp_pi;
 
 	printf("PI:[%d,%d] CP:%f\n", lbinom_pi, ubinom_pi, cp_pi);
 
@@ -288,9 +293,19 @@ void single_binom_iteration(int type, double Er, double Pt, double beta, double 
 		lbinom_cal--;
 	}
 	cp_cali = find_binom_prob(lbinom_cal,ubinom_cal, n-r, beta, eta, times);
+	cp_binom[3] = cp_cali;
+
 	printf("CALI:[%d,%d] CP:%f\n", lbinom_cal, ubinom_cal, cp_cali);
 
-	
+	ubinom_fon = fonsecabinominterval(betaB, etaB, upper, times, mbeta, meta, n, r);
+	lbinom_fon = fonsecabinominterval(betaB, etaB, lower, times, mbeta, meta, n, r);
+
+	cp_fon = find_binom_prob(lbinom_fon, ubinom_fon, n-r, beta, eta, times);
+	cp_binom[4] = cp_fon;
+
+	printf("FON:[%d,%d] CP:%f\n\n", lbinom_fon, ubinom_fon, cp_fon);
+
+	return cp_binom;
 }
 
 double find_binom_prob(double lower, double upper, int n, double beta, double eta, double times)

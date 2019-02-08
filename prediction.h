@@ -5,7 +5,7 @@
 extern double censor;
 
 double *single_continous_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper);
-void single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double times);
+double * single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double times);
 double *simulator(int type, double Er, double Pt, double shape, double scale);
 double *findmle(double data[], double weightArray[]);
 double *generateWeights(int FRWB, int n);
@@ -16,3 +16,4 @@ double pbbinominterval(double betab[], double etab[], double alpha, double times
 double gpqbinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r);
 double find_binom_prob(double lower, double upper, int n, double beta, double eta, double times);
 double calibinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r);
+double fonsecabinominterval(double betab[], double etabt[], double alpha, double times, double beta_mle, double eta_mle, int n, int r);
