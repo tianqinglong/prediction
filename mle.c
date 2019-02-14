@@ -8,6 +8,8 @@
 static int r,n;
 static double dataset[MAX_ARRAY], weight[MAX_ARRAY];
 
+extern double *findWeibullMLEs(double data[]);
+
 double geteta(double beta);
 double func1(double beta);
 
@@ -30,8 +32,15 @@ double *findmle(double data[], double weightArray[])
 	double machep = r8_epsilon();
 	double t = machep;
 
-	MLEs[0] = zero(0.001, 10000, machep, t, func1);
+	MLEs[0] = zero(0.1, 1000, machep, t, func1);
 	MLEs[1] = geteta(MLEs[0]);
+
+	if(MLEs[1] < 0.00001)
+	{
+		double *ret = findWeibullMLEs(data);
+		MLEs[0] = ret[0];
+		MLEs[1] = ret[1];
+	}
 
 	return MLEs;
 }
@@ -45,9 +54,6 @@ double func1(double beta)
 
 // compute eta
 	eta = geteta(beta);
-	if(eta > 1000000000){
-		eta = 1000000000;
-	}
 
 // compute the partial derivative
 	for(i=0;i<n;i++)
