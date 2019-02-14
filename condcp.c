@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <time.h>
+#include <math.h>
 #include <stdlib.h>
+
 #define MATHLIB_STANDALONE
 #include <Rmath.h>
-#include <math.h>
 
 #include "prediction.h"
 
@@ -42,7 +43,7 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 		censor = data[r+1];
 	}
 
-	//printf("The number of failure is: %d\nThe sample size is: %d\n",r,n);
+//	printf("The number of failure is: %d\nThe sample size is: %d\n",r,n);
 	
 	// for(i=0;i<n;i++){
 	// 	printf("%f\n", data[i+2]);
@@ -78,6 +79,8 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 			etaB[i] = mb[1];
 
 			if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
+				printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
+
 				i--;
 			}
 		}
@@ -94,6 +97,7 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 				etaB[i] = mb[1];
 
 				if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
+					printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
 					i--;
 				}
 			}
@@ -108,17 +112,17 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 				etaB[i] = mb[1];
 
 				if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
+					printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
 					i--;
 				}
 			}
 		}
 	}
 
-	//printf("%f %f\n", MLEs[0], MLEs[1]);
+	// printf("%f %f\n", MLEs[0], MLEs[1]);
 	// for(i=0;i<B;i++)
 	// {
-	// 	if(betaB[i] >100){
-	// 	printf("%f %f\n", betaB[i], etaB[i]);}
+	// 	printf("%f %f\n", betaB[i], etaB[i]);
 	// }
 
 	// prediction interval for plug-in method
@@ -155,13 +159,14 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	return cp;
 }
 
-double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double times)
+double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double nextCen)
 {
 	int i;
 
 	static double cp_binom[5];
 
 	int r,n;
+	double times;
 	int ubinom_pb, lbinom_pb, ubinom_gpq, lbinom_gpq, ubinom_pi, lbinom_pi, ubinom_cal, lbinom_cal, ubinom_fon, lbinom_fon;
 	double *data, *weight0, *MLEs, *mb, *wb, *db;
 	double mbeta, meta; //local copies to record mles
@@ -186,6 +191,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 		censor = data[r+1];
 	}
 
+	times = qweibull(nextCen, beta, eta, 1, 0)/censor;
 	weight0 = generateWeights(0, n); // Get the MLEs of the initial dataset, no need to do FRWB
 
 	// make a local copy
@@ -234,6 +240,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 
 				if(qualify_discrete(betaB[i], etaB[i], mbeta, meta, times))
 				{
+					printf("Bootstrap Draws Abnormal");
 					i--;
 				}
 			}
@@ -249,6 +256,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 
 				if(qualify_discrete(betaB[i], etaB[i], mbeta, meta, times))
 				{
+					printf("Bootstrap Draws Abnormal");
 					i--;
 				}
 			}
