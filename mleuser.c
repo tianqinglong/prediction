@@ -18,11 +18,19 @@ double *R_getmle(double data[])
 {
 	int lendata;
     static double val[2];
-	lendata = (int) data[1]+2;
+	lendata = (int) data[1] + 3 + (int) data[0];
 
 	SEXP arg;
 	PROTECT(arg = allocVector(REALSXP, lendata));
     memcpy(REAL(arg), data, lendata * sizeof(double));
+
+    // int i;
+
+    // printf("%d\n", lendata);
+    // for(i=0;i<lendata;i++)
+    // {
+    //     printf("%f ", REAL(arg)[i]);
+    // }
 
     SEXP Weibullmle_call;
     PROTECT(Weibullmle_call = lang2(install("Weibull.mle"), arg));

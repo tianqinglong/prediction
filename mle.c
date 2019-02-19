@@ -22,11 +22,14 @@ double *findmle(double data[], double weightArray[])
 	n = (int)data[1];
 
 	// Initialize the data and weights so that func1() can be used
-	for(i=0;i<n;i++)
+	for(i=0;i<(r+1);i++)
 	{
 		dataset[i] = data[i+2];
 		weight[i] = weightArray[i];
+		// printf("%f ", weightArray[i]);
 	}
+
+	// printf("\n");
 
 	// Find MLEs
 	double machep = r8_epsilon();
@@ -35,13 +38,26 @@ double *findmle(double data[], double weightArray[])
 	MLEs[0] = zero(0.1, 1000, machep, t, func1);
 	MLEs[1] = geteta(MLEs[0]);
 
-	if(MLEs[1] < 0.00001)
+	if(MLEs[1] < 0.00001 || MLEs[0] < 0.11 || MLEs[0] > 999)
 	{
-		double *ret = findWeibullMLEs(data);
+		double data_weight[MAX_ARRAY];
+
+		for(i=0;i<(n+2);i++)
+		{
+			data_weight[i] = data[i];
+		}
+		for(i=0;i<(r+1);i++)
+		{
+			data_weight[i+n+2] = weight[i];
+		}
+		// for(i=0;i<n+r+3;i++)
+		// {
+		// 	printf("%f ", data_weight[i]);
+		// }
+		double *ret = findWeibullMLEs(data_weight);
 		MLEs[0] = ret[0];
 		MLEs[1] = ret[1];
 	}
-
 	return MLEs;
 }
 
@@ -51,17 +67,15 @@ double func1(double beta)
 {	
 	int i;
 	double value=0, eta;
-
 // compute eta
 	eta = geteta(beta);
 
 // compute the partial derivative
-	for(i=0;i<n;i++)
+	for(i=0;i<r;i++)
 	{
-		value += ( i<r ) ? ( weight[i]/beta + weight[i]*log(dataset[i]) - weight[i]*log(eta) ) : 0;
-		value -= weight[i] * pow(dataset[i]/eta,beta) * log(dataset[i]/eta);
+		value += weight[i]/beta + weight[i]*log(dataset[i]) - weight[i]*log(eta) - weight[i]*pow(dataset[i]/eta,beta)*log(dataset[i]/eta);
 	}
-
+	value -= weight[r]*pow(dataset[r]/eta, beta)*log(dataset[r]/eta);
 	return value;
 }
 
@@ -72,11 +86,13 @@ double geteta(double beta)
 	double eta;
 
 	double nu=0, de=0;
-	for(i=0;i<n;i++)
+	for(i=0;i<r;i++)
 	{
-		de += (i<r)?weight[i]:0;
+		de += weight[i];
 		nu += weight[i]*pow(dataset[i],beta);
 	}
+	
+	nu += pow(dataset[r],beta)*weight[r];
 	eta = pow(nu/de, 1/beta);
 
 	return eta;

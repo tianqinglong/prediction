@@ -114,7 +114,7 @@ double *bootSimulator(double Er, double Pt, double shape, double scale)
 	return data;
 }
 
-double *generateWeights(int FRWB, int n)
+double *generateWeights(int FRWB, int r, int n)
 // This function gives the weight array.
 // FRWB = 0: all weights are 1
 {
@@ -125,24 +125,20 @@ double *generateWeights(int FRWB, int n)
 	if(FRWB == 0)
 	{
 		i=0;
-		while(i<n)
+		while(i<r)
 		{
 			weight[i] = 1;
 			i++;
 		}
+		weight[r] = n-r;
 	}
 	else if(FRWB == 1)
 	{
-		double V=0,Y[n];
-		for(i=0;i<n;i++)
+		for(i=0;i<r;i++)
 		{
-			Y[i] = rexp(1);
-			V += Y[i];
+			weight[i] = rexp(20);
 		}
-		for(i=0;i<n;i++)
-		{
-			weight[i] = Y[i]/V;
-		}
+		weight[r] = rgamma(n-r,20);
 	}
 
 	return weight;
