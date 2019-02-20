@@ -13,18 +13,18 @@ double funcgpq(double x);
 double condiprob(double shape, double scale, double times);
 double calibrate(double level_cali);
 
-double gpqinterval(double betab[], double etab[], double alpha, double mbeta, double meta)
+double *gpqinterval(double betab[], double etab[], double lower, double upper, double mbeta, double meta)
 // gpq method
 {
 	int i;
 	double interval;
+	static double gpqinterval[2];
 	// make a static global copy
 	for(i=0;i<B;i++)
 	{
 		betabt[i] = betab[i];
 		etabt[i] = etab[i];
 	}
-	level = alpha;
 
 	mlebeta = mbeta;
 	mleeta = meta;
@@ -32,16 +32,22 @@ double gpqinterval(double betab[], double etab[], double alpha, double mbeta, do
 	double machep = r8_epsilon();
 	double t = machep;
 
+	level = lower;
 	interval = zero(0, 10000000, machep, t, funcgpq);
+	gpqinterval[0] = interval;
 
-	return interval;
+	level = upper;
+	interval = zero(0, 10000000, machep, t, funcgpq);
+	gpqinterval[1] = interval;
+
+	return gpqinterval;
 }
 
-double pbinterval(double betab[], double etab[], double alpha)
+double *pbinterval(double betab[], double etab[], double lower, double upper)
 // percentile bootstrap
 {
 	int i;
-	double interval;
+	static double pbinterval[2];
 
 	double machep = r8_epsilon();
 	double t = machep;
@@ -52,11 +58,14 @@ double pbinterval(double betab[], double etab[], double alpha)
 		betabt[i] = betab[i];
 		etabt[i] = etab[i];
 	}
-	level = alpha;
 
-	interval = zero(0.00001, 10000000, machep, t, funcpb);
+	level = lower;
+	pbinterval[0] = zero(0, 10000000, machep, t, funcpb);
 
-	return interval;
+	level = upper;
+	pbinterval[1] = zero(0, 10000000, machep, t, funcpb);
+
+	return pbinterval;
 }
 
 double pbbinominterval(double betab[], double etab[], double alpha, double times, int n, int r)
@@ -367,4 +376,3 @@ double funcpb(double x)
 
 	return cdf;
 }
-

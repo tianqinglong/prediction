@@ -19,12 +19,10 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	int i;
 
 	int r,n;
+	int r_db, n_db;
 	double *data, *weight0, *MLEs, *mb, *wb, *db;
 	double mbeta, meta; //local copies to record mles
 	double betaB[B], etaB[B];
-
-	double ppil, bpil, gpil, ppiu, bpiu, gpiu; // plug-in, percentile bootstrap, gpq prediction intervals for iid Y, lower and upper
-	double pcp, bcp, gcp; // condition coverage probablity for plug-in, percentile and gpq methods.
 
 	static double cp[3];
 
@@ -43,44 +41,41 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 		censor = data[r+1];
 	}
 
-//	printf("The number of failure is: %d\nThe sample size is: %d\n",r,n);
+	printf("The number of failure is: %d\nThe sample size is: %d\n",r,n);
 	
 	// for(i=0;i<n;i++){
 	// 	printf("%f\n", data[i+2]);
 	// }
 
-	weight0 = generateWeights(0, n); // Get the MLEs of the initial dataset, no need to do FRWB
+	weight0 = generateWeights(0, r, n); // Get the MLEs of the initial dataset, no need to do FRWB
 
-	// make a local copy
-	double data1[n+2], weight1[n];
-	for(i=0; i<(n+2); i++)
-	{
-		data1[i] = data[i];
-	}
-	for(i=0; i<n; i++)
-	{
-		weight1[i] = weight0[i];
-	}
+	// for(i=0;i<r+1;i++){
+	// 	printf("%f\n", weight0[i]);
+	// }
 
-	MLEs = findmle(data1, weight1);
+	MLEs = findmle(data, weight0);
 
 	// make a local copy
 	mbeta = MLEs[0];
 	meta = MLEs[1];
-	// printf("The MLEs are: (%f, %f)\n", mbeta, meta);
+	printf("The MLEs are: (%f, %f)\n", mbeta, meta);
 
 	if(FRWB == 1)
 	{
 		for(i=0;i<B;i++)
 		{
-			wb = generateWeights(1, n);
-			mb = findmle(data1, wb);
+			wb = generateWeights(1, r, n);
+			// if(r==3 && n==60)
+			// for(j=0;j<(r+1);j++){
+			// 	printf("%f ", wb[j]);
+			// }
+
+			mb = findmle(data, wb);
 			betaB[i] = mb[0];
 			etaB[i] = mb[1];
 
 			if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
 				printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
-
 				i--;
 			}
 		}
@@ -92,7 +87,13 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 			for(i=0;i<B;i++)
 			{
 				db = simulator(type, Er, Pt, mbeta, meta);
-				mb = findmle(db, weight1);
+
+				r_db = db[0];
+				n_db = db[1];
+
+				wb = generateWeights(0, r_db, n_db);
+
+				mb = findmle(db, wb);
 				betaB[i] = mb[0];
 				etaB[i] = mb[1];
 
@@ -107,13 +108,28 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 			for(i=0;i<B;i++)
 			{
 				db = bootSimulator(Er, Pt, mbeta, meta);
-				mb = findmle(db, weight1);
+
+				// for(i=0;i<r+1;i++){
+				// 	printf("%f\n", weight1[i]);
+				// }
+
+				r_db = db[0];
+				n_db = db[1];
+
+				wb = generateWeights(0, r_db, n_db);
+
+				mb = findmle(db, wb);
 				betaB[i] = mb[0];
 				etaB[i] = mb[1];
 
 				if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
 					printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
 					i--;
+					// int k;
+					// for(k=0; k<n+2;k++)
+					// {
+					// 	printf("%f\n", db[k]);
+					// }
 				}
 			}
 		}
@@ -125,6 +141,9 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	// 	printf("%f %f\n", betaB[i], etaB[i]);
 	// }
 
+	double ppil, ppiu; // plug-in
+	double pcp, bcp, gcp; // condition coverage probablity for plug-in, percentile and gpq methods.
+
 	// prediction interval for plug-in method
 	ppil = qweibull(lower, mbeta, meta, 1, 0);
 	ppiu = qweibull(upper, mbeta, meta, 1, 0);
@@ -135,18 +154,18 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 
 	// prediction interval for GPQ method
 
-	gpil = gpqinterval(betaB, etaB, lower, mbeta, meta);
-	gpiu = gpqinterval(betaB, etaB, upper, mbeta, meta);
-	gcp = pweibull(gpiu, beta, eta, 1, 0) - pweibull(gpil, beta, eta, 1, 0);
+	double *gpqinter; // gpq
+	gpqinter = gpqinterval(betaB, etaB, lower, upper, mbeta, meta);
+	gcp = pweibull(gpqinter[1], beta, eta, 1, 0) - pweibull(gpqinter[0], beta, eta, 1, 0);
 
 	// printf("The gpq prediction interval is: (%f,%f)\n", gpil, gpiu);
 	// printf("The conditional probability of gpq method is: %f\n\n", gcp);
 
 	// prediction interval for Percentile Bootstrap
 
-	bpil = pbinterval(betaB, etaB, lower);
-	bpiu = pbinterval(betaB, etaB, upper);
-	bcp = pweibull(bpiu, beta, eta, 1, 0) - pweibull(bpil, beta, eta, 1, 0);
+	double *bpinter; //bp
+	bpinter = pbinterval(betaB, etaB, lower, upper);
+	bcp = pweibull(bpinter[1], beta, eta, 1, 0) - pweibull(bpinter[0], beta, eta, 1, 0);
 
 	// printf("The pb prediction interval is: (%f,%f)\n", bpil, bpiu);
 	// printf("The conditional probability of pb method is: %f\n\n", bcp);
@@ -192,7 +211,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 	}
 
 	times = qweibull(nextCen, beta, eta, 1, 0)/censor;
-	weight0 = generateWeights(0, n); // Get the MLEs of the initial dataset, no need to do FRWB
+	weight0 = generateWeights(0, r, n); // Get the MLEs of the initial dataset, no need to do FRWB
 
 	// make a local copy
 	double data1[n+2], weight1[n];
@@ -201,7 +220,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 		data1[i] = data[i];
 		// printf("%f\n", data1[i]);
 	}
-	for(i=0; i<n; i++)
+	for(i=0; i<(r+1); i++)
 	{
 		weight1[i] = weight0[i];
 	}
@@ -217,7 +236,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 	{
 		for(i=0;i<B;i++)
 		{
-			wb = generateWeights(1, n);
+			wb = generateWeights(1, r, n);
 			mb = findmle(data1, wb);
 			betaB[i] = mb[0];
 			etaB[i] = mb[1];
