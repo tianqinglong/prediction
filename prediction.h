@@ -1,5 +1,5 @@
 #define MAX_ARRAY 6000
-#define N 50
+#define N 5000
 #define B 5000
 
 extern double censor;

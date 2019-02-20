@@ -28,7 +28,7 @@ int main()
 	printf("Type\tEr\tPt\tBeta\tPlug\tGPQ\tPB\n");
 
 	int i,j,k,m;
-	int type = 2;
+	int type = 1;
     int isFRWB = 1;
     double lower = 0.025, upper = 0.975;
 

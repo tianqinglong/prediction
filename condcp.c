@@ -76,6 +76,11 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 
 			if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
 				printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
+				for (int j = 0; j < (r+1); ++j)
+				{
+					printf("%f %f\n", wb[j], data[j+2]);
+				}
+				getchar();
 				i--;
 			}
 		}

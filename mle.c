@@ -50,10 +50,7 @@ double *findmle(double data[], double weightArray[])
 		{
 			data_weight[i+n+2] = weight[i];
 		}
-		// for(i=0;i<n+r+3;i++)
-		// {
-		// 	printf("%f ", data_weight[i]);
-		// }
+
 		double *ret = findWeibullMLEs(data_weight);
 		MLEs[0] = ret[0];
 		MLEs[1] = ret[1];
