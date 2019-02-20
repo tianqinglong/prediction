@@ -38,10 +38,10 @@ int main()
 	double eta=1;
 	double beta, Er, Pf;
 
-    int lenbeta = 2, lenEr = 4, lenPf = 3;
+    int lenbeta = 1, lenEr = 4, lenPf = 3;
 	// double beta_array[lenbeta]={0.8, 1, 1.5, 3}, Er_array[lenEr]={5, 10, 15}, Pf_array[lenPf]={0.05 ,0.1 ,0.2};
 
-    double beta_array[2]={1,1.5}, Er_array[4]={3, 5, 10, 15}, Pf_array[3]={0.05 ,0.1, 0.2};
+    double beta_array[1]={1}, Er_array[4]={3, 5, 10, 15}, Pf_array[3]={0.05 ,0.1, 0.2};
 
 	set_seed(12, 1818);
 
