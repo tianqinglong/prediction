@@ -27,7 +27,7 @@ int main()
 
 	double eta=1;
 	double beta, Er, Pf;
-	double beta_array[4]={0.8, 1, 1.5, 3}, Er_array[3]={5, 10, 15}, Pf_array[3]={0.05 ,0.1 ,0.2};
+	double beta_array[1]={1}, Er_array[3]={5, 10, 15}, Pf_array[3]={0.05 ,0.1 ,0.2};
 
 	set_seed(12, 1818);
 
