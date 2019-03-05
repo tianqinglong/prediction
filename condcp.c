@@ -8,10 +8,16 @@
 
 #include "prediction.h"
 
+extern double condiprob_type2( double shape, double scale, double censoring, double duration);
 extern double condiprob(double shape, double scale, double times);
+
 double find_binom_prob(double lower, double upper, int n, double beta, double eta, double times);
+double find_binom_prob_type2( double lower, double upper, int n, double beta, double eta, double start, double duration);
+
 int qualify_discrete(double betab, double etab, double beta_mle, double eta_mle, double times);
 int qualify_continuous(double betab, double etab, double eta_mle, double beta_mle);
+int qualify_discrete_type2(double betab, double etab, double beta_mle, double eta_mle, double start, double duration);
+
 double get_real_plug_in_cover(int r, int n, double m_beta, double m_eta, double b_beta[], double b_eta[], double times, double lower, double upper);
 
 double *single_continous_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper)
@@ -186,6 +192,9 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 	meta = MLEs[1];
 	printf("The MLEs are: (%f, %f)\n", mbeta, meta);
 
+	double times;
+	times = qweibull(nextCen, beta, eta, 1, 0) / censor;
+
 	if(FRWB == 1)
 	{
 		for(i=0;i<B;i++)
@@ -195,6 +204,10 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 			mb = findmle(data, wb);
 			betaB[i] = mb[0];
 			etaB[i] = mb[1];
+
+			if( qualify_discrete( mb[0], mb[1], mbeta, meta, times ) ){
+				i--;
+			}
 		}
 	}
 	else if(FRWB == 0)
@@ -214,11 +227,6 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 				betaB[i] = mb[0];
 				etaB[i] = mb[1];
 
-				if(i==4990){
-					printf("%f %f %f\n", db[2], db[3], db[4]);
-					printf("%f %f %f\n", wb[0], wb[1], wb[2]);					
-				}
-
 			}
 		}
 		else if(type == 1)
@@ -235,13 +243,17 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 				mb = findmle(db, wb);
 				betaB[i] = mb[0];
 				etaB[i] = mb[1];
+
+				if( qualify_discrete( mb[0], mb[1], mbeta, meta, times ) ){
+					i--;
+				}
+
 			}
 		}
 	}
 
 	static double cp_binom[4];
-	double times;
-	times = qweibull(nextCen, beta, eta, 1, 0) / censor;
+	
 	// printf("The time is %f\n", times);
 
 // percentile bootstrap
@@ -269,9 +281,105 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 	cp_binom[3] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
 
 	return cp_binom;
+
 }
 
+// Find discete distribution for type 2 censoring
+double *single_type2_binom(double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double interval)
+{
+	int type = 2;
+	int i, r, n;
 
+	double *data, *weight0, *MLEs;
+	double beta_mle, eta_mle;
+
+	data = simulator( type, Er, Pt, beta, eta );
+	r = data[0];
+	n = data[1];
+
+	double data_local[n];
+	// make a local copy
+	for(i=0;i<(n+2);i++)
+	{
+		data_local[i] = data[i];
+	}
+
+	weight0 = generateWeights(0, r, n);
+
+	MLEs = findmle(data, weight0);
+	beta_mle = MLEs[0];
+	eta_mle = MLEs[1];
+
+	// Doing Bootstrap
+	double *data_temp, *weight_temp, *mle_temp, beta_boot[B], eta_boot[B], censor_time[B];
+	if(FRWB == 0)
+	{
+		weight_temp = generateWeights(0, r, n);
+
+		for(i = 0; i < B; i++)
+		{
+			data_temp = simulator( type, Er, Pt, beta_mle, eta_mle );
+			mle_temp = findmle( data_temp, weight_temp );
+
+			beta_boot[i] = mle_temp[0];
+			eta_boot[i] = mle_temp[1];
+			censor_time[i] = data_temp[r+2];
+
+			if( qualify_discrete_type2(mle_temp[0], mle_temp[1], beta_mle, eta_mle, censor_time[i], interval) )
+			{
+				i--;
+			}
+		}
+
+	}
+	else
+	{
+		for(i = 0; i < B; i++)
+		{
+
+			weight_temp = generateWeights(1, r, n);
+			mle_temp = findmle(data_local, weight_temp);
+
+			beta_boot[i] = mle_temp[0];
+			eta_boot[i] = mle_temp[1];
+			censor_time[i] = data_local[r+2];
+
+			if( qualify_discrete_type2(mle_temp[0], mle_temp[1], beta_mle, eta_mle, censor_time[i], interval) )
+			{
+				i--;
+			}
+		}
+	}
+
+	static double cp_binom[4];
+
+	// 2. Plug-in Method
+	int *plug_in_binom_interval;
+	printf("This is for Type 2:\n");
+	plug_in_binom_interval = plug_in_binominterval_type2(beta_mle, eta_mle, lower, upper, data_local[r+2], interval, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[1] = find_binom_prob_type2(plug_in_binom_interval[0], plug_in_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	// 1. Percentile Bootstrap
+	int *pb_binom_interval;
+	pb_binom_interval = pbbinominterval_type2( beta_boot , eta_boot , censor_time, interval , lower, upper, n, r);
+	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
+	cp_binom[0] = find_binom_prob_type2(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	// 3. GPQ
+	int *gpq_binom_interval;
+	gpq_binom_interval = gpqbinominterval_type2( beta_boot, eta_boot, censor_time, lower, upper, interval, beta_mle, eta_mle, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[2] = find_binom_prob_type2(gpq_binom_interval[0], gpq_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	// 4. Fonseca
+	int *fonseca_binom_interval;
+	fonseca_binom_interval = fonsecabinominterval_type2(beta_boot, eta_boot, censor_time, lower, upper, interval, beta_mle, eta_mle, n, r, data_local[r+2]);
+	printf("Fon: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[3] = find_binom_prob_type2(fonseca_binom_interval[0], fonseca_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	return cp_binom;
+}
 
 double single_binom_iteration_calibration_type1(double Er, double Pt, double beta, double eta, double lower, double upper, double nextCen)
 {
@@ -361,6 +469,16 @@ double find_binom_prob(double lower, double upper, int n, double beta, double et
 	return value;
 }
 
+double find_binom_prob_type2( double lower, double upper, int n, double beta, double eta, double start, double duration)
+{
+	double prob, value;
+
+	prob = condiprob_type2(beta, eta, start, duration);
+	value = pbinom(upper, n, prob, 1, 0) - pbinom(lower, n, prob, 1, 0) + dbinom(lower, n, prob, 0);
+
+	return value;
+}
+
 int qualify_discrete(double betab, double etab, double beta_mle, double eta_mle, double times)
 {
 	int flag1, flag2;
@@ -386,6 +504,31 @@ int qualify_discrete(double betab, double etab, double beta_mle, double eta_mle,
 	flag2 = isnan(binomp);
 
 	return (flag1||flag2);
+}
+
+int qualify_discrete_type2(double betab, double etab, double beta_mle, double eta_mle, double start, double duration){
+	int flag1, flag2;
+	double binomp;
+	binomp = condiprob_type2(betab, etab, start, duration);
+	flag1 = isnan(binomp);
+
+	double sigmab, mub, sigmah, muh;
+	double betagpq, etagpq;
+
+	muh = log(eta_mle);
+	sigmah = 1/beta_mle;
+
+	mub = log(etab);
+	sigmab = 1/betab;
+
+	betagpq = 1/(sigmah/sigmab*sigmah);
+	etagpq = exp(muh + (muh-mub)/sigmab*sigmah);
+	
+	binomp = condiprob_type2(betab, etab, start, duration);
+
+	flag2 = isnan(binomp);
+
+	return (flag1 || flag2);
 }
 
 int qualify_continuous(double betab, double etab, double eta_mle, double beta_mle)
