@@ -12,6 +12,7 @@ extern double condiprob(double shape, double scale, double times);
 double find_binom_prob(double lower, double upper, int n, double beta, double eta, double times);
 int qualify_discrete(double betab, double etab, double beta_mle, double eta_mle, double times);
 int qualify_continuous(double betab, double etab, double eta_mle, double beta_mle);
+double get_real_plug_in_cover(int r, int n, double m_beta, double m_eta, double b_beta[], double b_eta[], double times, double lower, double upper);
 
 double *single_continous_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper)
 // Compute the conditional coverage probability for one simulated dataset
@@ -42,17 +43,8 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	}
 
 	printf("The number of failure is: %d\nThe sample size is: %d\n",r,n);
-	
-	// for(i=0;i<n;i++){
-	// 	printf("%f\n", data[i+2]);
-	// }
 
 	weight0 = generateWeights(0, r, n); // Get the MLEs of the initial dataset, no need to do FRWB
-
-	// for(i=0;i<r+1;i++){
-	// 	printf("%f\n", weight0[i]);
-	// }
-
 	MLEs = findmle(data, weight0);
 
 	// make a local copy
@@ -65,10 +57,6 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 		for(i=0;i<B;i++)
 		{
 			wb = generateWeights(1, r, n);
-			// if(r==3 && n==60)
-			// for(j=0;j<(r+1);j++){
-			// 	printf("%f ", wb[j]);
-			// }
 
 			mb = findmle(data, wb);
 			betaB[i] = mb[0];
@@ -130,23 +118,13 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 				if(qualify_continuous(betaB[i], etaB[i], mbeta, meta)){
 					printf("Abnormal Bootstrap Draws %f %f\n", betaB[i], etaB[i]);
 					i--;
-					// int k;
-					// for(k=0; k<n+2;k++)
-					// {
-					// 	printf("%f\n", db[k]);
-					// }
 				}
 			}
 		}
 	}
 
-	// printf("%f %f\n", MLEs[0], MLEs[1]);
-	// for(i=0;i<B;i++)
-	// {
-	// 	printf("%f %f\n", betaB[i], etaB[i]);
-	// }
-
-	double ppil, ppiu; // plug-in
+	// plug-in
+	double ppil, ppiu;
 	double pcp, bcp, gcp; // condition coverage probablity for plug-in, percentile and gpq methods.
 
 	// prediction interval for plug-in method
@@ -154,17 +132,11 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	ppiu = qweibull(upper, mbeta, meta, 1, 0);
 	pcp = pweibull(ppiu, beta, eta, 1, 0) - pweibull(ppil, beta, eta, 1, 0);
 
-	// printf("The plug-in prediction interval is: (%f,%f)\n", ppil, ppiu);
-	// printf("The conditional probability of plug-in method is: %f\n\n", pcp);
-
 	// prediction interval for GPQ method
 
 	double *gpqinter; // gpq
 	gpqinter = gpqinterval(betaB, etaB, lower, upper, mbeta, meta);
 	gcp = pweibull(gpqinter[1], beta, eta, 1, 0) - pweibull(gpqinter[0], beta, eta, 1, 0);
-
-	// printf("The gpq prediction interval is: (%f,%f)\n", gpil, gpiu);
-	// printf("The conditional probability of gpq method is: %f\n\n", gcp);
 
 	// prediction interval for Percentile Bootstrap
 
@@ -172,14 +144,10 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	bpinter = pbinterval(betaB, etaB, lower, upper);
 	bcp = pweibull(bpinter[1], beta, eta, 1, 0) - pweibull(bpinter[0], beta, eta, 1, 0);
 
-	// printf("The pb prediction interval is: (%f,%f)\n", bpil, bpiu);
-	// printf("The conditional probability of pb method is: %f\n\n", bcp);
-
 	cp[0] = pcp;
 	cp[1] = gcp;
 	cp[2] = bcp;
 
-	//debugger(betaB, etaB);
 	return cp;
 }
 
@@ -187,18 +155,11 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 {
 	int i;
 
-	static double cp_binom[5];
-
 	int r,n;
-	double times;
-	int ubinom_pb, lbinom_pb, ubinom_gpq, lbinom_gpq, ubinom_pi, lbinom_pi, ubinom_cal, lbinom_cal, ubinom_fon, lbinom_fon;
+	int r_db, n_db;
 	double *data, *weight0, *MLEs, *mb, *wb, *db;
 	double mbeta, meta; //local copies to record mles
 	double betaB[B], etaB[B];
-
-	double cp_pb, cp_gpq, cp_pi, cp_cali, cp_fon;
-
-	//static double cp[3];
 
 	if(type == 1)
 	{
@@ -215,22 +176,10 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 		censor = data[r+1];
 	}
 
-	times = qweibull(nextCen, beta, eta, 1, 0)/censor;
+	printf("The number of failure is: %d\nThe sample size is: %d\n",r,n);
+
 	weight0 = generateWeights(0, r, n); // Get the MLEs of the initial dataset, no need to do FRWB
-
-	// make a local copy
-	double data1[n+2], weight1[n];
-	for(i=0; i<(n+2); i++)
-	{
-		data1[i] = data[i];
-		// printf("%f\n", data1[i]);
-	}
-	for(i=0; i<(r+1); i++)
-	{
-		weight1[i] = weight0[i];
-	}
-
-	MLEs = findmle(data1, weight1);
+	MLEs = findmle(data, weight0);
 
 	// make a local copy
 	mbeta = MLEs[0];
@@ -242,13 +191,10 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 		for(i=0;i<B;i++)
 		{
 			wb = generateWeights(1, r, n);
-			mb = findmle(data1, wb);
+
+			mb = findmle(data, wb);
 			betaB[i] = mb[0];
 			etaB[i] = mb[1];
-			if(qualify_discrete(betaB[i], etaB[i], mbeta, meta, times))
-			{
-				i--;
-			}
 		}
 	}
 	else if(FRWB == 0)
@@ -258,15 +204,21 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 			for(i=0;i<B;i++)
 			{
 				db = simulator(type, Er, Pt, mbeta, meta);
-				mb = findmle(db, weight1);
+
+				r_db = db[0];
+				n_db = db[1];
+
+				wb = generateWeights(0, r_db, n_db);
+
+				mb = findmle(db, wb);
 				betaB[i] = mb[0];
 				etaB[i] = mb[1];
 
-				if(qualify_discrete(betaB[i], etaB[i], mbeta, meta, times))
-				{
-					printf("Bootstrap Draws Abnormal");
-					i--;
+				if(i==4990){
+					printf("%f %f %f\n", db[2], db[3], db[4]);
+					printf("%f %f %f\n", wb[0], wb[1], wb[2]);					
 				}
+
 			}
 		}
 		else if(type == 1)
@@ -274,70 +226,129 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 			for(i=0;i<B;i++)
 			{
 				db = bootSimulator(Er, Pt, mbeta, meta);
-				mb = findmle(db, weight1);
+
+				r_db = db[0];
+				n_db = db[1];
+
+				wb = generateWeights(0, r_db, n_db);
+
+				mb = findmle(db, wb);
 				betaB[i] = mb[0];
 				etaB[i] = mb[1];
-
-				if(qualify_discrete(betaB[i], etaB[i], mbeta, meta, times))
-				{
-					printf("Bootstrap Draws Abnormal");
-					i--;
-				}
 			}
 		}
 	}
 
-	lbinom_pb = pbbinominterval(betaB, etaB, lower, times, n, r);
-	ubinom_pb = pbbinominterval(betaB, etaB, upper, times, n, r);
+	static double cp_binom[4];
+	double times;
+	times = qweibull(nextCen, beta, eta, 1, 0) / censor;
+	// printf("The time is %f\n", times);
 
-	cp_pb = find_binom_prob(lbinom_pb, ubinom_pb, n-r, beta, eta, times);
-	cp_binom[0] = cp_pb;
+// percentile bootstrap
+	int *pb_binom_interval;
+	pb_binom_interval = pbbinominterval(betaB, etaB, lower, upper, times, n, r);
+	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
+	cp_binom[0] = find_binom_prob(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, times);
 
-	printf("PB:[%d,%d] CP:%f\n", lbinom_pb, ubinom_pb, cp_pb);
+// plug-in method
+	int *plug_in_binom_interval;
+	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lower, upper, times, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[1] = find_binom_prob(plug_in_binom_interval[0],plug_in_binom_interval[1], n-r, beta, eta, times);
 
-	lbinom_gpq = gpqbinominterval(betaB, etaB, lower, times, mbeta, meta, n, r);
-	ubinom_gpq = gpqbinominterval(betaB, etaB, upper, times, mbeta, meta, n, r);
+// GPQ method
+	int *gpq_binom_interval;
+	gpq_binom_interval = gpqbinominterval(betaB, etaB, lower, upper, times, mbeta, meta, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[2] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
 
-	cp_gpq = find_binom_prob(lbinom_gpq, ubinom_gpq, n-r, beta, eta, times);
-	cp_binom[1] = cp_gpq;
-
-	printf("GPQ:[%d,%d] CP:%f\n", lbinom_gpq, ubinom_gpq, cp_gpq);
-
-	double p_pi,tmp;
-
-	p_pi = condiprob(mbeta, meta, times);
-	tmp = qbinom(lower, n-r, p_pi,1,0);
-	lbinom_pi = (tmp == 0) ? 0 : (tmp - 1);
-	ubinom_pi = qbinom(upper, n-r, p_pi,1,0);
-
-	cp_pi = find_binom_prob(lbinom_pi,ubinom_pi, n-r, beta, eta, times);
-	cp_binom[2] = cp_pi;
-
-	printf("PI:[%d,%d] CP:%f\n", lbinom_pi, ubinom_pi, cp_pi);
-
-	double ucali, lcali;
-	ucali = calibinominterval(betaB, etaB, upper, times, mbeta, meta, n, r);
-	lcali = calibinominterval(betaB, etaB, lower, times, mbeta, meta, n, r);
-
-	ubinom_cal = qbinom(ucali, n-r, p_pi, 1, 0);
-	lbinom_cal = qbinom(lcali, n-r, p_pi, 1, 0);
-	if(lbinom_cal > 0){
-		lbinom_cal--;
-	}
-	cp_cali = find_binom_prob(lbinom_cal,ubinom_cal, n-r, beta, eta, times);
-	cp_binom[3] = cp_cali;
-
-	printf("CALI:[%d,%d] CP:%f\n", lbinom_cal, ubinom_cal, cp_cali);
-
-	ubinom_fon = fonsecabinominterval(betaB, etaB, upper, times, mbeta, meta, n, r);
-	lbinom_fon = fonsecabinominterval(betaB, etaB, lower, times, mbeta, meta, n, r);
-
-	cp_fon = find_binom_prob(lbinom_fon, ubinom_fon, n-r, beta, eta, times);
-	cp_binom[4] = cp_fon;
-
-	printf("FON:[%d,%d] CP:%f\n\n", lbinom_fon, ubinom_fon, cp_fon);
+// Fonseca method
+	int *fonseca_binom_interval;
+	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper, times, mbeta, meta, n, r);
+	printf("Fsc: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[3] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
 
 	return cp_binom;
+}
+
+
+
+double single_binom_iteration_calibration_type1(double Er, double Pt, double beta, double eta, double lower, double upper, double nextCen)
+{
+	int i;
+	int r, n, br, bn;
+	double *weight0, *MLEs, *bdata, *data;
+	double coverage_probability=1;
+	double lcl, ucl;
+	double cp_binom;
+	double mbeta, meta, bmbeta[B], bmeta[B];
+
+	censor = qweibull(Pt, beta, eta, 1, 0);
+
+	double times = qweibull(nextCen, beta, eta, 1, 0) / censor;
+
+	data = simulator(1 , Er, Pt, beta, eta);
+	r = data[0];
+	n = data[1];
+
+	int r_array[B];
+
+	weight0 = generateWeights(0, r, n); // Get the MLEs of the initial dataset, no need to do FRWB
+	MLEs = findmle(data, weight0);
+
+	mbeta = MLEs[0];
+	meta = MLEs[1];
+
+	for(i = 0; i < B; i++)
+	{
+		bdata = bootSimulator( Er, Pt, mbeta, meta);
+		br = bdata[0];
+		bn = bdata[1];
+
+		weight0 = generateWeights(0, br, bn);
+		MLEs = findmle(bdata, weight0);
+
+		bmbeta[i] = MLEs[0];
+		bmeta[i] = MLEs[1];
+		r_array[i] = br;
+	}
+
+	lcl = 0;
+	ucl = 1;
+
+	while(coverage_probability > (upper - lower))
+	{
+		lcl += 0.001;
+		ucl -= 0.001;
+		coverage_probability = get_real_plug_in_cover(r, n, mbeta, meta, bmbeta, bmeta, times, lcl, ucl);
+		printf("%f\n", coverage_probability);
+	}
+
+	int *plug_in_binom_interval;
+	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lcl, ucl, times, n, r);
+	printf("Cali: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	printf("Calibrated: %f %f %f\n", lcl, ucl, coverage_probability);
+	cp_binom = find_binom_prob(plug_in_binom_interval[0],plug_in_binom_interval[1], n-r, beta, eta, times);
+
+	return cp_binom;
+}
+
+double get_real_plug_in_cover(int r, int n, double m_beta, double m_eta, double b_beta[], double b_eta[], double times, double lower, double upper)
+{
+	int i;
+	int *plug_in_interval;
+	double cp = 0;
+	for(i=0;i<B;i++)
+	{
+		plug_in_interval = plug_in_binominterval(b_beta[i], b_eta[i], lower, upper, times, n, r);
+		// prob = condiprob(b_beta[i], b_eta[i], times);
+		// printf("%f %f %f %f %f %d %d %f\n", b_beta[i], b_eta[i], lower, upper, times, n, r_array[i], prob);
+		// printf("%d %d %d %f %f\n", plug_in_interval[0], plug_in_interval[1], n-r, lower, upper);
+		cp += find_binom_prob(plug_in_interval[0],plug_in_interval[1], n-r, m_beta, m_eta, times);
+	}
+	cp = cp/B;
+
+	return cp;
 }
 
 double find_binom_prob(double lower, double upper, int n, double beta, double eta, double times)

@@ -35,10 +35,10 @@ double *findmle(double data[], double weightArray[])
 	double machep = r8_epsilon();
 	double t = machep;
 
-	MLEs[0] = zero(0.1, 1000, machep, t, func1);
+	MLEs[0] = zero(0.1, 300, machep, t, func1);
 	MLEs[1] = geteta(MLEs[0]);
 
-	if(MLEs[1] < 0.00001 || MLEs[0] < 0.11 || MLEs[0] > 999)
+	if(MLEs[1] < 0.00001 || MLEs[1] > 100000 || MLEs[0] < 0.105 || MLEs[0] > 299)
 	{
 		double data_weight[MAX_ARRAY];
 

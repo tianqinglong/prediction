@@ -29,7 +29,7 @@ int main()
 
 	int i,j,k,m;
 	int type = 1;
-    int isFRWB = 1;
+    int isFRWB = 0;
     double lower = 0.025, upper = 0.975;
 
 	double *cptmp;
@@ -63,6 +63,7 @@ int main()
 
     			for(m=0;m<N;m++)
     			{
+                    printf("This is iteration %d\n", m+1);
     				cptmp = single_continous_iteration(type, Er, Pf, beta, eta, isFRWB, lower, upper);
     				cp1 += cptmp[0];
     				cp2 += cptmp[1];

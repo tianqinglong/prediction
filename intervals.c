@@ -6,15 +6,17 @@
 #include "prediction.h"
 #include "brent.h"
 
-static double mlebeta, mleeta, level, betabt[B], etabt[B], local_time, local_n, local_r, local_betam, local_etam;
+static double mlebeta, mleeta, level, betabt[B], etabt[B];
 
 double funcpb(double x);
 double funcgpq(double x);
 double condiprob(double shape, double scale, double times);
 double calibrate(double level_cali);
 
-double *gpqinterval(double betab[], double etab[], double lower, double upper, double mbeta, double meta)
+/* The Continuous Cases */
+
 // gpq method
+double *gpqinterval(double betab[], double etab[], double lower, double upper, double mbeta, double meta)
 {
 	int i;
 	double interval;
@@ -41,10 +43,10 @@ double *gpqinterval(double betab[], double etab[], double lower, double upper, d
 	gpqinterval[1] = interval;
 
 	return gpqinterval;
-}
+}	
 
-double *pbinterval(double betab[], double etab[], double lower, double upper)
 // percentile bootstrap
+double *pbinterval(double betab[], double etab[], double lower, double upper)
 {
 	int i;
 	static double pbinterval[2];
@@ -68,52 +70,83 @@ double *pbinterval(double betab[], double etab[], double lower, double upper)
 	return pbinterval;
 }
 
-double pbbinominterval(double betab[], double etab[], double alpha, double times, int n, int r)
+
+/* The Discrete Cases */
+
+///////////////////////////
+//Plug-in Method///////////
+///////////////////////////
+
+int *plug_in_binominterval(double beta, double eta, double lower, double upper, double times, int n, int r)
+{
+	static int interval[2];
+	int temp;
+	double binom_prob;
+	binom_prob = condiprob(beta, eta, times);
+
+	temp = qbinom(lower, n-r, binom_prob, 1, 0);
+	interval[0] = ( temp == 0 ) ? 0 : temp - 1;
+
+	temp = qbinom(upper, n-r, binom_prob, 1, 0);
+	interval[1] = temp;
+
+	return interval;
+}
+
+///////////////////////////
+//Percentile Bootstrap/////
+///////////////////////////
+
+int *pbbinominterval(double betab[], double etab[], double lower, double upper, double times, int n, int r)
 // percentile bootstrap for within sample discrete prediction
 {
-	int i,j,bound;
-	double binomp, cdf;
-	for(i=0;i<B;i++)
-	{
-		betabt[i] = betab[i];
-		etabt[i] = etab[i];
-	}
+	int i, j;
+	int lb = -10, ub = -10;
+	double binomp, cdf, cdf_pre = 0;
 
-	level = alpha;
-	local_time = times;
-
-	local_r = r;
-	local_n = n;
+	static int interval[2];
 
 	for(i=0;i<=(n-r);i++)
 	{
 		cdf = 0;
 		for(j=0;j<B;j++)
 		{
-			binomp = condiprob(betabt[j], etabt[j], local_time);
-			cdf += pbinom(i,local_n-local_r,binomp,1,0);
+			binomp = condiprob(betab[j], etab[j], times);
+			cdf += pbinom(i,n - r,binomp,1,0);
 		}
 		cdf = cdf/B;
 
-		if(cdf > level)
+		if(cdf > lower && cdf_pre <= lower)
 		{
-			bound = i;
+			lb = (i == 0) ? 0: (i-1);
+		}
+
+		if(cdf >= upper)
+		{
+			ub = i;
 			break;
 		}
+
+		cdf_pre = cdf;
 	}
 
-	if(level < 0.5)
-	{
-		bound = (bound==0)?0:(bound-1);
-	}
+	interval[0] = lb;
+	interval[1] = ub;
 
-	return bound;
+	return interval;
 }
 
-double gpqbinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
+
+///////////////////////////
+//GPQ Binom Interval///////
+///////////////////////////
+
+int *gpqbinominterval(double betab[], double etab[], double lower, double upper, double times, double beta_mle, double eta_mle, int n, int r)
 {
-	int i,j,bound;
-	double binomp, cdf;
+	int i,j;
+	double binomp, cdf, cdf_pre;
+	int lb =-10, ub=-10;
+	static int gpq_binom_interval[2];
 
 	double sigmab, mub, sigmah, muh;
 	double betagpq, etagpq;
@@ -121,18 +154,7 @@ double gpqbinominterval(double betab[], double etab[], double alpha, double time
 	muh = log(eta_mle);
 	sigmah = 1/beta_mle;
 
-	for(i=0;i<B;i++)
-	{
-		betabt[i] = betab[i];
-		etabt[i] = etab[i];
-	}
-
-	level = alpha;
-	local_time = times;
-
-	local_n = n;
-	local_r = r;
-
+	cdf_pre = 0;
 	for(i=0;i<=(n-r);i++)
 	{
 		cdf=0;
@@ -144,105 +166,43 @@ double gpqbinominterval(double betab[], double etab[], double alpha, double time
 			betagpq = 1/(sigmah/sigmab*sigmah);
 			etagpq = exp(muh + (muh-mub)/sigmab*sigmah);
 
-			binomp = condiprob(betagpq, etagpq, local_time);
-			cdf += pbinom(i, local_n-local_r, binomp, 1, 0);
+			binomp = condiprob(betagpq, etagpq, times);
+			cdf += pbinom(i, n-r, binomp, 1, 0);
 		}
 		cdf = cdf/B;
 
-		if(cdf > level)
+		if(cdf > lower && cdf_pre <= lower)
 		{
-			bound = i;
+			lb = ( i == 0 ) ? 0 : i-1;
+		}
+
+		if(cdf >= upper){
+			ub = i;
 			break;
 		}
-	}
-	if(level < 0.5){
-		bound = (bound == 0)?0:(bound-1);
+
+		cdf_pre = cdf;
 	}
 
-	return bound;
+	gpq_binom_interval[0] = lb;
+	gpq_binom_interval[1] = ub;
+
+	return gpq_binom_interval;
 }
 
-double calibinominterval(double betab[], double etab[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
+///////////////////////////
+//Fonseca Binom Interval///
+///////////////////////////
+
+int *fonsecabinominterval(double betab[], double etabt[], double lower, double upper, double times, double beta_mle, double eta_mle, int n, int r)
 {
-	int i;
+	int i, j, lb = -10, ub = -10;
+	double cdf, pbm, pbb, cdf_pre=0;
+	static int fonseca_interval[2];
 
-	double cali_alpha;
-
-	for(i=0;i<B;i++)
-	{
-		betabt[i] = betab[i];
-		etabt[i] = etab[i];
-	}
-
-	level = alpha;
-	local_time = times;
-
-	local_r = r;
-	local_n = n;
-
-	local_betam = beta_mle;
-	local_etam = eta_mle;
-
-	double machep = r8_epsilon();
-	double t = machep;
-
-	// double cdf, blevel, tmp;
-	// blevel = calibrate(level);
-
-	// if(level > 0.5)
-	// {
-	// 	tmp = level;
-	// 	if(blevel > level)
-	// 	{
-	// 		while(blevel > level)
-	// 		{
-	// 			tmp -= 0.002;
-	// 			blevel = calibrate(tmp);
-	// 		}
-	// 	}
-	// 	else
-	// 	{
-	// 		while(blevel < level)
-	// 		{
-	// 			tmp +=0.002;
-	// 			blevel = calibrate(tmp);
-	// 		}
-	// 	}
-	// }
-	// else
-	// {
-	// 	tmp = level;
-	// 	if(blevel < level)
-	// 	{
-	// 		while(blevel < level)
-	// 		{
-	// 			tmp += 0.002;
-	// 			blevel = calibrate(tmp);
-	// 		}
-	// 	}
-	// 	else
-	// 	{
-	// 		while(blevel > level)
-	// 		{
-	// 			tmp -= 0.002;
-	// 			blevel = calibrate(tmp);
-	// 		}
-	// 	}
-	// }
-	cali_alpha = zero(0,1,machep,t,calibrate);
-
-
-	return cali_alpha;
-}
-
-double fonsecabinominterval(double betab[], double etabt[], double alpha, double times, double beta_mle, double eta_mle, int n, int r)
-{
-	int i,j, bound = -1;
-	double cdf, pbm, pbb;
-
-	pbm = condiprob(beta_mle, eta_mle, times);
+	pbm = condiprob( beta_mle, eta_mle, times );
 	
-	for(i=0;i<=(n-r);i++)
+	for( i=0 ;i <= (n-r); i++ )
 	{	
 		cdf = 0;
 		for(j=0;j<B;j++)
@@ -252,63 +212,37 @@ double fonsecabinominterval(double betab[], double etabt[], double alpha, double
 		}
 		cdf = cdf/B;
 
-		if(cdf > alpha)
-		{
-			bound = i;
+		if(cdf > lower && cdf_pre <= lower){
+			lb = (i ==0) ? 0 : i-1;
+		}
+
+		if(cdf >= upper){
+			ub = i;
 			break;
 		}
+		cdf_pre = cdf;
 	}
 
-	if(alpha < 0.5)
-	{
-		if(bound != 0)
-		{
-			bound--;
-		}
-	}
+	fonseca_interval[0] = lb;
+	fonseca_interval[1] = ub;
 
-	return bound;
+	return fonseca_interval;
 }
+
+// int *calibinominterval(double lower, double upper, double times, double beta_mle, double eta_mle, int n, int r)
+// {
+
+// }
 
 ///////////////////////////////
 /* Below are local functions */
 ///////////////////////////////
 
-double calibrate(double alpha_cali)
-{
-	int i, interval;
-	double prob, cdf, pbm, value;
+// double (double beta, double eta)
+// {
 
-	pbm = condiprob(local_betam, local_etam, local_time);
-	cdf = 0;
-	if(level < 0.5)
-	{
-		for(i=0;i<B;i++)
-		{
-			prob = condiprob(betabt[i], etabt[i], local_time);
-			interval = qbinom(alpha_cali, local_n - local_r, prob, 1, 0);
-			interval = (interval == 0) ? 0 : (interval-1);
-			cdf += pbinom(interval,local_n - local_r,pbm,0,0) + dbinom(interval, local_n - local_r, pbm, 0);
-		}
-		cdf = cdf/B;
-
-		value = cdf - (1-level);
-	}
-	else
-	{
-		for(i=0;i<B;i++)
-		{
-			prob = condiprob(betabt[i], etabt[i], local_time);
-			interval = qbinom(alpha_cali, local_n - local_r, prob, 1, 0);
-			cdf += pbinom(interval, local_n - local_r,pbm,1,0);
-		}
-		cdf = cdf/B;
-
-		value = cdf - level;
-	}
-
-	return value;
-}
+// 	return value;
+// }
 
 double condiprob(double shape, double scale, double times)
 {
@@ -343,27 +277,6 @@ double funcgpq(double x)
 
 	return cdf;
 }
-
-// void debugger(double betab[], double etab[])
-// {
-// 	int i;
-// 	//double x=0.1;
-
-// 	// make a static global copy
-// 	for(i=0;i<B;i++)
-// 	{
-// 		betabt[i] = betab[i];
-// 		etabt[i] = etab[i];
-// 	}
-// 	// printf("x\tcdf(x)\n");
-// 	// for(i=0;i<100;i++)
-// 	// 	printf("%f %f\n", by*i, funcpb(by*i)+level);
-// 	// for(i=0;i<B;i++)
-// 	// {
-// 	// 	printf("%f\n", pweibull(x,betabt[i],etabt[i],1,0));
-// 	// }
-// 	printf("%f %f\n", betabt[420],etabt[420]);
-// }
 
 double funcpb(double x)
 {
