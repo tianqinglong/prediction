@@ -37,8 +37,8 @@ int main()
     int type = 1, isFRWB = 0;
     double nextCenorP;
     double add = 0.1;
-    double Er_array[2] = {5, 10}, Pt_array[2] = {0.05, 0.1};
-    double lower = 0.025, upper = 0.975;
+    double Er_array[4] = {5, 10, 18, 20}, Pt_array[2] = {0.05, 0.1};
+    double lower = 0, upper = 0.95;
     double beta = 1, eta=1;
     double interval;
     double Er, Pt;
@@ -54,7 +54,7 @@ int main()
 	double cp1_2 = 0, cp2_2=0, cp3_2=0, cp4_2=0;
 
 	int ee, pp;
-	for(ee = 0;ee < 2; ee++){
+	for(ee = 0 ; ee < 4 ; ee++){
 
 		Er = Er_array[ee];
 

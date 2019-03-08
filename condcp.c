@@ -278,7 +278,7 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 	int *fonseca_binom_interval;
 	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper, times, mbeta, meta, n, r);
 	printf("Fsc: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
-	cp_binom[3] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
+	cp_binom[3] = find_binom_prob(fonseca_binom_interval[0],fonseca_binom_interval[1], n-r, beta, eta, times);
 
 	return cp_binom;
 
