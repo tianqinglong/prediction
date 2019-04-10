@@ -157,7 +157,8 @@ double *single_continous_iteration(int type, double Er, double Pt, double beta, 
 	return cp;
 }
 
-double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double nextCen)
+double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB,
+	double lower, double upper1, double upper2, double upper3, double upper4, double nextCen)
 {
 	int i;
 
@@ -252,40 +253,86 @@ double *single_binom_iteration(int type, double Er, double Pt, double beta, doub
 		}
 	}
 
-	static double cp_binom[4];
-	
-	// printf("The time is %f\n", times);
-
+	static double cp_binom[16];
+// printf("The time is %f\n", times);
 // percentile bootstrap
 	int *pb_binom_interval;
-	pb_binom_interval = pbbinominterval(betaB, etaB, lower, upper, times, n, r);
-	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
+	pb_binom_interval = pbbinominterval(betaB, etaB, lower, upper1, times, n, r);
+	printf("PB: [%d,%d] at %f\n", pb_binom_interval[0], pb_binom_interval[1], upper1);
 	cp_binom[0] = find_binom_prob(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, times);
+
+	pb_binom_interval = pbbinominterval(betaB, etaB, lower, upper2, times, n, r);
+	printf("PB: [%d,%d] at %f\n", pb_binom_interval[0], pb_binom_interval[1], upper2);
+	cp_binom[4] = find_binom_prob(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, times);
+	
+	pb_binom_interval = pbbinominterval(betaB, etaB, lower, upper3, times, n, r);
+	printf("PB: [%d,%d] at %f\n", pb_binom_interval[0], pb_binom_interval[1], upper3);
+	cp_binom[8] = find_binom_prob(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, times);
+	
+	pb_binom_interval = pbbinominterval(betaB, etaB, lower, upper4, times, n, r);
+	printf("PB: [%d,%d] at %f\n", pb_binom_interval[0], pb_binom_interval[1], upper4);
+	cp_binom[12] = find_binom_prob(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, times);
 
 // plug-in method
 	int *plug_in_binom_interval;
-	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lower, upper, times, n, r);
+	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lower, upper1, times, n, r);
 	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
 	cp_binom[1] = find_binom_prob(plug_in_binom_interval[0],plug_in_binom_interval[1], n-r, beta, eta, times);
 
+	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lower, upper2, times, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[5] = find_binom_prob(plug_in_binom_interval[0],plug_in_binom_interval[1], n-r, beta, eta, times);
+
+	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lower, upper3, times, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[9] = find_binom_prob(plug_in_binom_interval[0],plug_in_binom_interval[1], n-r, beta, eta, times);
+
+	plug_in_binom_interval = plug_in_binominterval(mbeta, meta, lower, upper4, times, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[13] = find_binom_prob(plug_in_binom_interval[0],plug_in_binom_interval[1], n-r, beta, eta, times);
+
 // GPQ method
 	int *gpq_binom_interval;
-	gpq_binom_interval = gpqbinominterval(betaB, etaB, lower, upper, times, mbeta, meta, n, r);
+	gpq_binom_interval = gpqbinominterval(betaB, etaB, lower, upper1, times, mbeta, meta, n, r);
 	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
 	cp_binom[2] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
 
+	gpq_binom_interval = gpqbinominterval(betaB, etaB, lower, upper2, times, mbeta, meta, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[6] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
+
+	gpq_binom_interval = gpqbinominterval(betaB, etaB, lower, upper3, times, mbeta, meta, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[10] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
+
+	gpq_binom_interval = gpqbinominterval(betaB, etaB, lower, upper4, times, mbeta, meta, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[14] = find_binom_prob(gpq_binom_interval[0],gpq_binom_interval[1], n-r, beta, eta, times);
+
 // Fonseca method
 	int *fonseca_binom_interval;
-	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper, times, mbeta, meta, n, r);
+	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper1, times, mbeta, meta, n, r);
 	printf("Fsc: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
 	cp_binom[3] = find_binom_prob(fonseca_binom_interval[0],fonseca_binom_interval[1], n-r, beta, eta, times);
 
-	return cp_binom;
+	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper2, times, mbeta, meta, n, r);
+	printf("Fsc: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[7] = find_binom_prob(fonseca_binom_interval[0],fonseca_binom_interval[1], n-r, beta, eta, times);
 
+	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper3, times, mbeta, meta, n, r);
+	printf("Fsc: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[11] = find_binom_prob(fonseca_binom_interval[0],fonseca_binom_interval[1], n-r, beta, eta, times);
+
+	fonseca_binom_interval = fonsecabinominterval(betaB, etaB, lower, upper4, times, mbeta, meta, n, r);
+	printf("Fsc: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[15] = find_binom_prob(fonseca_binom_interval[0],fonseca_binom_interval[1], n-r, beta, eta, times);
+
+	return cp_binom;
 }
 
 // Find discete distribution for type 2 censoring
-double *single_type2_binom(double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double interval)
+double *single_type2_binom(double Er, double Pt, double beta, double eta, int FRWB, double lower,
+	double upper1, double upper2, double upper3, double upper4,double interval)
 {
 	int type = 2;
 	int i, r, n;
@@ -351,32 +398,80 @@ double *single_type2_binom(double Er, double Pt, double beta, double eta, int FR
 		}
 	}
 
-	static double cp_binom[4];
+	static double cp_binom[16];
 
 	// 2. Plug-in Method
 	int *plug_in_binom_interval;
 	printf("This is for Type 2:\n");
-	plug_in_binom_interval = plug_in_binominterval_type2(beta_mle, eta_mle, lower, upper, data_local[r+2], interval, n, r);
+	plug_in_binom_interval = plug_in_binominterval_type2(beta_mle, eta_mle, lower, upper1, data_local[r+2], interval, n, r);
 	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
-	cp_binom[1] = find_binom_prob_type2(plug_in_binom_interval[0], plug_in_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+	cp_binom[0] = find_binom_prob_type2(plug_in_binom_interval[0], plug_in_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	plug_in_binom_interval = plug_in_binominterval_type2(beta_mle, eta_mle, lower, upper2, data_local[r+2], interval, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[4] = find_binom_prob_type2(plug_in_binom_interval[0], plug_in_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	plug_in_binom_interval = plug_in_binominterval_type2(beta_mle, eta_mle, lower, upper3, data_local[r+2], interval, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[8] = find_binom_prob_type2(plug_in_binom_interval[0], plug_in_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	plug_in_binom_interval = plug_in_binominterval_type2(beta_mle, eta_mle, lower, upper4, data_local[r+2], interval, n, r);
+	printf("PI: [%d,%d]\n", plug_in_binom_interval[0], plug_in_binom_interval[1]);
+	cp_binom[12] = find_binom_prob_type2(plug_in_binom_interval[0], plug_in_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
 
 	// 1. Percentile Bootstrap
 	int *pb_binom_interval;
-	pb_binom_interval = pbbinominterval_type2( beta_boot , eta_boot , censor_time, interval , lower, upper, n, r);
+	pb_binom_interval = pbbinominterval_type2( beta_boot , eta_boot , censor_time, interval , lower, upper1, n, r);
 	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
-	cp_binom[0] = find_binom_prob_type2(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+	cp_binom[1] = find_binom_prob_type2(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	pb_binom_interval = pbbinominterval_type2( beta_boot , eta_boot , censor_time, interval , lower, upper2, n, r);
+	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
+	cp_binom[5] = find_binom_prob_type2(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	pb_binom_interval = pbbinominterval_type2( beta_boot , eta_boot , censor_time, interval , lower, upper3, n, r);
+	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
+	cp_binom[9] = find_binom_prob_type2(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	pb_binom_interval = pbbinominterval_type2( beta_boot , eta_boot , censor_time, interval , lower, upper4, n, r);
+	printf("PB: [%d,%d]\n", pb_binom_interval[0], pb_binom_interval[1]);
+	cp_binom[13] = find_binom_prob_type2(pb_binom_interval[0], pb_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
 
 	// 3. GPQ
 	int *gpq_binom_interval;
-	gpq_binom_interval = gpqbinominterval_type2( beta_boot, eta_boot, censor_time, lower, upper, interval, beta_mle, eta_mle, n, r);
+	gpq_binom_interval = gpqbinominterval_type2( beta_boot, eta_boot, censor_time, lower, upper1, interval, beta_mle, eta_mle, n, r);
 	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
 	cp_binom[2] = find_binom_prob_type2(gpq_binom_interval[0], gpq_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
 
+	gpq_binom_interval = gpqbinominterval_type2( beta_boot, eta_boot, censor_time, lower, upper2, interval, beta_mle, eta_mle, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[6] = find_binom_prob_type2(gpq_binom_interval[0], gpq_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	gpq_binom_interval = gpqbinominterval_type2( beta_boot, eta_boot, censor_time, lower, upper3, interval, beta_mle, eta_mle, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[10] = find_binom_prob_type2(gpq_binom_interval[0], gpq_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	gpq_binom_interval = gpqbinominterval_type2( beta_boot, eta_boot, censor_time, lower, upper4, interval, beta_mle, eta_mle, n, r);
+	printf("GPQ: [%d,%d]\n", gpq_binom_interval[0], gpq_binom_interval[1]);
+	cp_binom[14] = find_binom_prob_type2(gpq_binom_interval[0], gpq_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
 	// 4. Fonseca
 	int *fonseca_binom_interval;
-	fonseca_binom_interval = fonsecabinominterval_type2(beta_boot, eta_boot, censor_time, lower, upper, interval, beta_mle, eta_mle, n, r, data_local[r+2]);
+	fonseca_binom_interval = fonsecabinominterval_type2(beta_boot, eta_boot, censor_time, lower, upper1, interval, beta_mle, eta_mle, n, r, data_local[r+2]);
 	printf("Fon: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
 	cp_binom[3] = find_binom_prob_type2(fonseca_binom_interval[0], fonseca_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+
+	fonseca_binom_interval = fonsecabinominterval_type2(beta_boot, eta_boot, censor_time, lower, upper2, interval, beta_mle, eta_mle, n, r, data_local[r+2]);
+	printf("Fon: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[7] = find_binom_prob_type2(fonseca_binom_interval[0], fonseca_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+	
+	fonseca_binom_interval = fonsecabinominterval_type2(beta_boot, eta_boot, censor_time, lower, upper3, interval, beta_mle, eta_mle, n, r, data_local[r+2]);
+	printf("Fon: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[11] = find_binom_prob_type2(fonseca_binom_interval[0], fonseca_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
+	
+	fonseca_binom_interval = fonsecabinominterval_type2(beta_boot, eta_boot, censor_time, lower, upper4, interval, beta_mle, eta_mle, n, r, data_local[r+2]);
+	printf("Fon: [%d,%d]\n", fonseca_binom_interval[0], fonseca_binom_interval[1]);
+	cp_binom[15] = find_binom_prob_type2(fonseca_binom_interval[0], fonseca_binom_interval[1], n-r, beta, eta, data_local[r+2], interval);
 
 	return cp_binom;
 }

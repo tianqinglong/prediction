@@ -1,13 +1,15 @@
 #define MAX_ARRAY 6000
-#define N 4000
-#define B 3000
+#define N 5000
+#define B 5000
 
 extern double censor;
 
 double *single_continous_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper);
-double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double nextCen);
+double *single_binom_iteration(int type, double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper1, double upper2
+	, double upper3, double upper4, double nextCen);
 
-double *single_type2_binom(double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper, double interval);
+double *single_type2_binom(double Er, double Pt, double beta, double eta, int FRWB, double lower, double upper1, double upper2
+	, double upper3, double upper4, double interval);
 
 double *simulator(int type, double Er, double Pt, double shape, double scale);
 double *findmle(double data[], double weightArray[]);
